@@ -53,6 +53,10 @@
         "mutex": "cpp",
         "ratio": "cpp",
         "thread": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "list": "cpp",
+        "set": "cpp",
+        "iomanip": "cpp",
+        "cinttypes": "cpp"
     }
 }
