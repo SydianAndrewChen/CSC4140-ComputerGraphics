@@ -18,8 +18,6 @@ int main(){
     std::cout << "****************\nQuestion2\n****************" << std::endl; 
     Eigen::Matrix4f m1(4,4);
     Eigen::Matrix4f m2(4,4);
-    float m1_arr[16];
-    float m2_arr[16];
     for (size_t i = 0; i < 4; i++)
     {
         for (size_t j = 0; j < 4; j++)
@@ -41,9 +39,8 @@ int main(){
     image = cv::imread( "../img/input/lenna.png");
     cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     cv::normalize(image, image, 1.0, 0.0, cv::NORM_MINMAX);
-    int chs = image.channels();
+    
     cv::Mat img = image.reshape(1, 0);
-    std::cout << img.size() << ", " << img.channels() << std::endl;
     Eigen::MatrixXd mat;
     cv::cv2eigen(img, mat);
 
@@ -66,8 +63,8 @@ int main(){
     cv::Mat img50;
     cv::eigen2cv(mat50, img50);
     cv::imwrite("../img/output/lenna_50.png", img50 * 255);
-    std::cout << "All images written into path: img/output/\n";
-    
+    std::cout << "All images written into path: Assignment1/img/output/\n";
+
     /* Question 4 */
     std::cout << "****************\nQuestion4\n****************" << std::endl; 
     Eigen::Vector3d Point1(1,2,3);
