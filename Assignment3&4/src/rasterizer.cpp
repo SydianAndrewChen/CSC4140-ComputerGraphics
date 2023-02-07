@@ -12,8 +12,9 @@ namespace CGL {
     this->width = width;
     this->height = height;
     this->sample_rate = sample_rate;
+    this->bg_color = Color::White;
 
-    sample_buffer.resize(width * height * sample_rate, Color::White);
+    sample_buffer.resize(width * height * sample_rate, this->bg_color);
   }
 
   // Used by rasterize_point and rasterize_line
@@ -65,53 +66,72 @@ namespace CGL {
     }
   }
 
+  void calc_bary(float x0, float y0, 
+    float x1, float y1, 
+    float x2, float y2, 
+    float xp, float yp,
+    float * bary) {
+    
+    float div = (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)));
+    float u = (((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) * ((yp-y0)*(y2-y0)+(xp-x0)*(x2-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((yp-y0)*(y1-y0)+(xp-x0)*(x1-x0)))/div;
+    float v = (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((yp-y0)*(y1-y0)+(xp-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((yp-y0)*(y2-y0)+(xp-x0)*(x2-x0)))/div;
+
+    bary[0] = 1.-u-v;
+    bary[1] = v;
+    bary[2] = u;
+  }
+
   // Rasterize a triangle.
   void RasterizerImp::rasterize_triangle(float x0, float y0,
     float x1, float y1,
     float x2, float y2,
     Color color) {
     // TODO: Task 1: Implement basic triangle rasterization here, no supersampling
-    if (y0 == y1 && y1 == y2) return;
-
-    if (y0 > y1) {
-      std::swap(x0, x1);
-      std::swap(y0, y1);
-    }
-    if (y0 > y2) {
-      std::swap(x0, x2);
-      std::swap(y0, y2);
-    }
-    if (y1 > y2) {
-      std::swap(x1, x2);
-      std::swap(y1, y2);
-    }
-
-    int total_height = y2 - y0;
-    for (int i = 0; i < total_height; i++)
-    {
-      bool lower_half = (i > y1 - y0) || (y1 == y0);
-      int segment_height = lower_half ? y2-y1 : y1-y0;
-      float alpha = (float)i/total_height;
-      float beta = (float)(i - (lower_half ? y1-y0:0))/segment_height;
-      int xa = x0 + (x2-x0)*alpha;
-      int xb = lower_half ? (x1 + (x2 - x1)*beta):(x0 + (x1 - x0)*beta);
-      // int ya = y0 + (y2-y0)*alpha;
-      // int yb = lower_half ? (y1 + (y2 - y1)*beta):(y0 + (y1 - y0)*beta);
-      if (xa > xb){
-        std::swap(xa, xb);
-        // std::swap(ya, yb);
-      }
-      for (int j = xa; j < xb; j++)
-      {
-        rasterize_point(j, y0 + i, color);
-      }
-      
-    }
     
+    // int x_min = std::min(std::min(x0, x1), x2);
+    // int y_min = std::min(std::min(y0, y1), y2);
+    // int x_max = std::max(std::max(x0, x1), x2);
+    // int y_max = std::max(std::max(y0, y1), y2);
+    // x_min = std::max(std::min(x_min, (int)this->width), 0);
+    // y_min = std::max(std::min(y_min, (int)this->height), 0);
+    // x_max = std::max(std::min(x_max, (int)this->width), 0);
+    // y_max = std::max(std::min(y_max, (int)this->height), 0);
+    
+    // for (int x = x_min; x <= x_max; x++)
+    // {
+    //   float bary[3];
+    //   for (int y = y_min; y <= y_max; y++)
+    //   { 
+    //     calc_bary(x0, y0, x1, y1, x2, y2, x, y, bary);
+    //     if (bary[0] >= 0 && bary[0] <= 1 && bary[1] >= 0 && bary[1] <= 1 && bary[2] >= 0 && bary[2] <= 1){
+    //       rasterize_point(x, y, color);
+    //     }
+    //   } 
+    // }
+
 
     // TODO: Task 2: Update to implement super-sampled rasterization
-
-
+    int s = static_cast<int>(sqrt(sample_rate));
+    int x_min = std::min(std::min(x0, x1), x2);
+    int y_min = std::min(std::min(y0, y1), y2);
+    int x_max = std::max(std::max(x0, x1), x2);
+    int y_max = std::max(std::max(y0, y1), y2);
+    x_min = s * std::max(std::min(x_min, (int)this->width), 0);
+    y_min = s * std::max(std::min(y_min, (int)this->height), 0);
+    x_max = s * std::max(std::min(x_max, (int)this->width), 0);
+    y_max = s * std::max(std::min(y_max, (int)this->height), 0);
+    
+    for (int x = x_min; x <= x_max; x++)
+    {
+      float bary[3];
+      for (int y = y_min; y <= y_max; y++)
+      { 
+        calc_bary(x0 * s, y0 * s, x1 * s, y1 * s, x2 * s, y2 * s, x, y, bary);
+        if (bary[0] >= 0 && bary[0] <= 1 && bary[1] >= 0 && bary[1] <= 1 && bary[2] >= 0 && bary[2] <= 1){
+          rasterize_point(x, y, color);
+        }
+      } 
+    }
 
   }
 
@@ -122,9 +142,27 @@ namespace CGL {
   {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
-
-
-
+    int x_min = std::min(std::min(x0, x1), x2);
+    int y_min = std::min(std::min(y0, y1), y2);
+    int x_max = std::max(std::max(x0, x1), x2);
+    int y_max = std::max(std::max(y0, y1), y2);
+    x_min = std::max(std::min(x_min, (int)this->width), 0);
+    y_min = std::max(std::min(y_min, (int)this->height), 0);
+    x_max = std::max(std::min(x_max, (int)this->width), 0);
+    y_max = std::max(std::min(y_max, (int)this->height), 0);
+    
+    float bary[3];
+    for (int x = x_min; x <= x_max; x++)
+    {
+      for (int y = y_min; y <= y_max; y++)
+      { 
+        calc_bary(x0, y0, x1, y1, x2, y2, x, y, bary);
+        if (bary[0] > 0 && bary[0] < 1 && bary[1] > 0 && bary[1] < 1 && bary[2] > 0 && bary[2] < 1){
+          // rasterize_point(x, y, Color(bary[0], bary[1], bary[2]));
+          rasterize_point(x, y, c0 * bary[0] + c1 * bary[1] + c2 * bary[2]);
+        }
+      } 
+    }
   }
 
 
@@ -148,7 +186,7 @@ namespace CGL {
     this->sample_rate = rate;
 
 
-    this->sample_buffer.resize(width * height, Color::White);
+    this->sample_buffer.resize(width * height * sample_rate, Color::White);
   }
 
 
@@ -162,7 +200,7 @@ namespace CGL {
     this->rgb_framebuffer_target = rgb_framebuffer;
 
 
-    this->sample_buffer.resize(width * height, Color::White);
+    this->sample_buffer.resize(width * height * sample_rate, Color::White);
   }
 
 
@@ -180,17 +218,36 @@ namespace CGL {
   void RasterizerImp::resolve_to_framebuffer() {
     // TODO: Task 2: You will likely want to update this function for supersampling support
 
-
+    int s = static_cast<int>(sqrt(sample_rate));
     for (int x = 0; x < width; ++x) {
       for (int y = 0; y < height; ++y) {
-        Color col = sample_buffer[y * width + x];
+        // Color col(0., 0., 0.);
+        // // if (sample_rate > 1){
+
+        // // std::cout << "x \t\t" << x << std::endl; 
+        // // std::cout << "y \t\t" << y << std::endl; 
+        // // }
+
+        // for (int i = 0; i < s; ++i)
+        //   for (int j = 0; j < s; ++j)
+        //   {
+        //     int index = (y*s+j)*width*s+x*s+i;
+        //     col += sample_buffer[index];
+        //     // if (sample_rate > 1){
+        //     // std::cout << "col.r \t\t" << col.r << std::endl; 
+        //     // std::cout << "col.g \t\t" << col.g << std::endl; 
+        //     // std::cout << "col.b \t\t" << col.b << std::endl; 
+        //     // std::cout << "index \t\t" << index << std::endl; 
+        //     // }
+        //   }
+        // col = col * (1. / static_cast<float>(sample_rate));
+        // // Color col = sample_buffer[y * width + x];
 
         for (int k = 0; k < 3; ++k) {
           this->rgb_framebuffer_target[3 * (y * width + x) + k] = (&col.r)[k] * 255;
         }
       }
     }
-
   }
 
   Rasterizer::~Rasterizer() { }
