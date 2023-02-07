@@ -71,6 +71,43 @@ namespace CGL {
     float x2, float y2,
     Color color) {
     // TODO: Task 1: Implement basic triangle rasterization here, no supersampling
+    if (y0 == y1 && y1 == y2) return;
+
+    if (y0 > y1) {
+      std::swap(x0, x1);
+      std::swap(y0, y1);
+    }
+    if (y0 > y2) {
+      std::swap(x0, x2);
+      std::swap(y0, y2);
+    }
+    if (y1 > y2) {
+      std::swap(x1, x2);
+      std::swap(y1, y2);
+    }
+
+    int total_height = y2 - y0;
+    for (int i = 0; i < total_height; i++)
+    {
+      bool lower_half = (i > y1 - y0) || (y1 == y0);
+      int segment_height = lower_half ? y2-y1 : y1-y0;
+      float alpha = (float)i/total_height;
+      float beta = (float)(i - (lower_half ? y1-y0:0))/segment_height;
+      int xa = x0 + (x2-x0)*alpha;
+      int xb = lower_half ? (x1 + (x2 - x1)*beta):(x0 + (x1 - x0)*beta);
+      // int ya = y0 + (y2-y0)*alpha;
+      // int yb = lower_half ? (y1 + (y2 - y1)*beta):(y0 + (y1 - y0)*beta);
+      if (xa > xb){
+        std::swap(xa, xb);
+        // std::swap(ya, yb);
+      }
+      for (int j = xa; j < xb; j++)
+      {
+        rasterize_point(j, y0 + i, color);
+      }
+      
+    }
+    
 
     // TODO: Task 2: Update to implement super-sampled rasterization
 
