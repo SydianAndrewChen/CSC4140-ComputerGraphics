@@ -12,8 +12,9 @@ namespace CGL {
     this->width = width;
     this->height = height;
     this->sample_rate = sample_rate;
+    this->bg_color = Color::White;
 
-    sample_buffer.resize(width * height * sample_rate, Color::White);
+    sample_buffer.resize(width * height * sample_rate, this->bg_color);
   }
 
   // Used by rasterize_point and rasterize_line
@@ -65,6 +66,25 @@ namespace CGL {
     }
   }
 
+  void calc_bary(float x0, float y0, 
+    float x1, float y1, 
+    float x2, float y2, 
+    float xp, float yp,
+    float * bary) {
+    
+    float u = 
+    (((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) * ((yp-y0)*(y2-y0)+(xp-x0)*(x2-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((yp-y0)*(y1-y0)+(xp-x0)*(x1-x0)))/
+    (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)));
+
+    float v = 
+    (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((yp-y0)*(y1-y0)+(xp-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((yp-y0)*(y2-y0)+(xp-x0)*(x2-x0)))/
+    (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)));
+
+    bary[0] = u;
+    bary[1] = v;
+    bary[2] = 1. - u - v;
+  }
+
   // Rasterize a triangle.
   void RasterizerImp::rasterize_triangle(float x0, float y0,
     float x1, float y1,
@@ -90,9 +110,9 @@ namespace CGL {
     for (int i = 0; i < total_height; i++)
     {
       bool lower_half = (i > y1 - y0) || (y1 == y0);
-      int segment_height = lower_half ? y2-y1 : y1-y0;
+      int segment_height = 1.0 + (lower_half ? y2-y1 : y1-y0);
       float alpha = (float)i/total_height;
-      float beta = (float)(i - (lower_half ? y1-y0:0))/segment_height;
+      float beta  = (float)(i - (lower_half ? y1-y0:0))/segment_height;
       int xa = x0 + (x2-x0)*alpha;
       int xb = lower_half ? (x1 + (x2 - x1)*beta):(x0 + (x1 - x0)*beta);
       // int ya = y0 + (y2-y0)*alpha;
@@ -101,9 +121,40 @@ namespace CGL {
         std::swap(xa, xb);
         // std::swap(ya, yb);
       }
-      for (int j = xa; j < xb; j++)
+      for (int j = xa; j <= xb; j++)
       {
-        rasterize_point(j, y0 + i, color);
+        int curr_x = j;
+        int curr_y = y0+i;
+
+        // int step_total = sqrt(sample_rate);
+        // float step_len = 1.0 / (step_total + 1);
+        // float start_x = curr_x - 0.5 + step_len;
+        // float start_y = curr_y - 0.5 + step_len;
+
+        // int valid_cnt = 0;
+        // for (int x_step = 0; x_step < step_total; x_step++)
+        // {
+        //   float super_sample_x = start_x + x_step * step_len;
+        //   for (int y_step = 0; y_step < step_total; y_step++)
+        //   {
+        //     float super_sample_y = start_y + y_step * step_len; 
+        //     float bary[3];
+        //     calc_bary(x0, y0, x1, y1, x2, y2, super_sample_x, super_sample_y, bary);
+        //     if (bary[0] > 0 && bary[0] < 1 && bary[1] > 0 && bary[1] < 1 && bary[2] > 0 && bary[2] < 1) valid_cnt++;
+        //   }
+          
+        // }
+
+        // // float bary[3];
+        // // calc_bary(x0, y0, x1, y1, x2, y2, curr_x, curr_y, bary);
+        // // rasterize_point(j, y0 + i, Color(bary[0], bary[1], bary[2]));
+        // float s = (float)valid_cnt/sample_rate;
+        // rasterize_point(curr_x, curr_y, color * s + bg_color * (1.0-s));
+        rasterize_point(curr_x, curr_y, color);
+        
+        
+        
+
       }
       
     }
@@ -123,7 +174,73 @@ namespace CGL {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
 
+    if (y0 == y1 && y1 == y2) return;
 
+    if (y0 > y1) {
+      std::swap(x0, x1);
+      std::swap(y0, y1);
+    }
+    if (y0 > y2) {
+      std::swap(x0, x2);
+      std::swap(y0, y2);
+    }
+    if (y1 > y2) {
+      std::swap(x1, x2);
+      std::swap(y1, y2);
+    }
+
+    int total_height = y2 - y0;
+    for (int i = 0; i < total_height; i++)
+    {
+      bool lower_half = (i > y1 - y0) || (y1 == y0);
+      int segment_height = 1.0 + (lower_half ? y2-y1 : y1-y0);
+      float alpha = (float)i/total_height;
+      float beta = (float)(i - (lower_half ? y1-y0:0))/segment_height;
+      int xa = x0 + (x2-x0)*alpha;
+      int xb = lower_half ? (x1 + (x2 - x1)*beta):(x0 + (x1 - x0)*beta);
+      // int ya = y0 + (y2-y0)*alpha;
+      // int yb = lower_half ? (y1 + (y2 - y1)*beta):(y0 + (y1 - y0)*beta);
+      if (xa > xb){
+        std::swap(xa, xb);
+        // std::swap(ya, yb);
+      }
+      for (int j = xa; j <= xb; j++)
+      {
+        int curr_x = j;
+        int curr_y = y0+i;
+
+        // int step_total = sqrt(sample_rate);
+        // float step_len = 1.0 / (step_total + 1);
+        // float start_x = curr_x - 0.5 + step_len;
+        // float start_y = curr_y - 0.5 + step_len;
+
+        // int valid_cnt = 0;
+        // for (int x_step = 0; x_step < step_total; x_step++)
+        // {
+        //   float super_sample_x = start_x + x_step * step_len;
+        //   for (int y_step = 0; y_step < step_total; y_step++)
+        //   {
+        //     float super_sample_y = start_y + y_step * step_len; 
+        //     float bary[3];
+        //     calc_bary(x0, y0, x1, y1, x2, y2, super_sample_x, super_sample_y, bary);
+        //     if (bary[0] > 0 && bary[0] < 1 && bary[1] > 0 && bary[1] < 1 && bary[2] > 0 && bary[2] < 1) valid_cnt++;
+        //   }
+          
+        // }
+
+        float bary[3];
+        calc_bary(x0, y0, x1, y1, x2, y2, curr_x, curr_y, bary);
+        auto c = c0 * bary[0] + c1 * bary[1] + c2 * bary[2];
+        rasterize_point(j, y0 + i, c);
+        // float s = (float)valid_cnt/sample_rate;
+        // rasterize_point(curr_x, curr_y, color * s + bg_color * (1.0-s));
+        
+        
+        
+
+      }
+      
+    }
 
   }
 

@@ -79,6 +79,8 @@ namespace CGL {
     // The number of elements in buffer = width * height * sample_rate
     std::vector<Color> sample_buffer;
 
+    Color bg_color;
+
   public:
 
     RasterizerImp(PixelSampleMethod psm, LevelSampleMethod lsm,
