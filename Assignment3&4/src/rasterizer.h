@@ -5,6 +5,7 @@
 #include "CGL/vector3D.h"
 #include <vector>
 #include "svg.h"
+#include "utils.h"
 
 namespace CGL {
 
@@ -72,6 +73,7 @@ namespace CGL {
     // The target pixel framebuffer connected to display. There are
     // 3 x width * height values in this RGB pixel array.
     unsigned char* rgb_framebuffer_target;
+    std::vector<unsigned char> valid_cnt_buffer;
 
     // The internal color sample buffer, contains *all samples*
     // Organized in a matrix, stored in a 1-d vector

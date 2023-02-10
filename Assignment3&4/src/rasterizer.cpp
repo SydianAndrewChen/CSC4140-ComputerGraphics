@@ -14,7 +14,8 @@ namespace CGL {
     this->sample_rate = sample_rate;
     this->bg_color = Color::White;
 
-    sample_buffer.resize(width * height * sample_rate, this->bg_color);
+    sample_buffer.resize(width * height, this->bg_color);
+    valid_cnt_buffer.resize(width * height, 0);
   }
 
   // Used by rasterize_point and rasterize_line
@@ -116,20 +117,31 @@ namespace CGL {
     int y_min = std::min(std::min(y0, y1), y2);
     int x_max = std::max(std::max(x0, x1), x2);
     int y_max = std::max(std::max(y0, y1), y2);
-    x_min = s * std::max(std::min(x_min, (int)this->width), 0);
-    y_min = s * std::max(std::min(y_min, (int)this->height), 0);
-    x_max = s * std::max(std::min(x_max, (int)this->width), 0);
-    y_max = s * std::max(std::min(y_max, (int)this->height), 0);
+    x_min = std::max(std::min(x_min, (int)this->width), 0);
+    y_min = std::max(std::min(y_min, (int)this->height), 0);
+    x_max = std::max(std::min(x_max, (int)this->width), 0);
+    y_max = std::max(std::min(y_max, (int)this->height), 0);
     
     for (int x = x_min; x <= x_max; x++)
     {
-      float bary[3];
       for (int y = y_min; y <= y_max; y++)
-      { 
-        calc_bary(x0 * s, y0 * s, x1 * s, y1 * s, x2 * s, y2 * s, x, y, bary);
-        if (bary[0] >= 0 && bary[0] <= 1 && bary[1] >= 0 && bary[1] <= 1 && bary[2] >= 0 && bary[2] <= 1){
-          rasterize_point(x, y, color);
-        }
+      {
+        float bary[3]{};
+        calc_bary(x0, y0, x1, y1, x2, y2, x, y, bary);
+        // if (VALID_BARY(bary[0], bary[1], bary[2], 0)){
+          int valid_cnt = 0;
+          int x_start = x - 0.5;
+          int y_start = y - 0.5;
+          for (int i = 0; i < s; i++)
+            for (int j = 0; j < s; j++)
+            {
+              calc_bary(x0, y0, x1, y1, x2, y2, x_start+static_cast<float>(i+1)/(s+1), y_start+static_cast<float>(j+1)/(s+1), bary);
+              if (VALID_BARY(bary[0], bary[1], bary[2], 0.)) valid_cnt++;
+            }
+          float r = static_cast<float>(valid_cnt) / sample_rate;
+
+          rasterize_point(x, y, color * r + sample_buffer[y*width + x] * (1.-r));
+        // }
       } 
     }
 
@@ -142,6 +154,7 @@ namespace CGL {
   {
     // TODO: Task 4: Rasterize the triangle, calculating barycentric coordinates and using them to interpolate vertex colors across the triangle
     // Hint: You can reuse code from rasterize_triangle
+    int s = static_cast<int>(sqrt(sample_rate));
     int x_min = std::min(std::min(x0, x1), x2);
     int y_min = std::min(std::min(y0, y1), y2);
     int x_max = std::max(std::max(x0, x1), x2);
@@ -151,16 +164,23 @@ namespace CGL {
     x_max = std::max(std::min(x_max, (int)this->width), 0);
     y_max = std::max(std::min(y_max, (int)this->height), 0);
     
-    float bary[3];
     for (int x = x_min; x <= x_max; x++)
     {
       for (int y = y_min; y <= y_max; y++)
-      { 
+      {
+        float bary[3]{};
         calc_bary(x0, y0, x1, y1, x2, y2, x, y, bary);
-        if (bary[0] > 0 && bary[0] < 1 && bary[1] > 0 && bary[1] < 1 && bary[2] > 0 && bary[2] < 1){
-          // rasterize_point(x, y, Color(bary[0], bary[1], bary[2]));
-          rasterize_point(x, y, c0 * bary[0] + c1 * bary[1] + c2 * bary[2]);
-        }
+        int valid_cnt = 0;
+        int x_start = x - 0.5;
+        int y_start = y - 0.5;
+        for (int i = 0; i < s; i++)
+          for (int j = 0; j < s; j++)
+          {
+            calc_bary(x0, y0, x1, y1, x2, y2, x+i*(1./s), y+j*(1./s), bary);
+            if (VALID_BARY(bary[0], bary[1], bary[2], 0.0)) valid_cnt++;
+          }
+        float r = static_cast<float>(valid_cnt) / sample_rate;
+        rasterize_point(x, y, (c0 * bary[0] + c1 * bary[1] + c2 * bary[2]) * r + sample_buffer[y*width + x] * (1.-r));
       } 
     }
   }
@@ -200,13 +220,16 @@ namespace CGL {
     this->rgb_framebuffer_target = rgb_framebuffer;
 
 
-    this->sample_buffer.resize(width * height * sample_rate, Color::White);
+    this->sample_buffer.resize(width * height, Color::White);
+    valid_cnt_buffer.resize(width * height, 0);
+
   }
 
 
   void RasterizerImp::clear_buffers() {
     std::fill(rgb_framebuffer_target, rgb_framebuffer_target + 3 * width * height, 255);
     std::fill(sample_buffer.begin(), sample_buffer.end(), Color::White);
+    std::fill(valid_cnt_buffer.begin(), valid_cnt_buffer.end(), 0);
   }
 
 
@@ -241,7 +264,7 @@ namespace CGL {
         //     // }
         //   }
         // col = col * (1. / static_cast<float>(sample_rate));
-        // // Color col = sample_buffer[y * width + x];
+        Color col = sample_buffer[y * width + x];
 
         for (int k = 0; k < 3; ++k) {
           this->rgb_framebuffer_target[3 * (y * width + x) + k] = (&col.r)[k] * 255;
