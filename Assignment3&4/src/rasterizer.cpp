@@ -71,7 +71,6 @@ namespace CGL {
     float x2, float y2, 
     float xp, float yp,
     float * bary) {
-    
     float div = (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)));
     float u = (((y1-y0)*(y1-y0)+(x1-x0)*(x1-x0)) * ((yp-y0)*(y2-y0)+(xp-x0)*(x2-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((yp-y0)*(y1-y0)+(xp-x0)*(x1-x0)))/div;
     float v = (((y2-y0)*(y2-y0)+(x2-x0)*(x2-x0)) * ((yp-y0)*(y1-y0)+(xp-x0)*(x1-x0)) - ((y2-y0)*(y1-y0)+(x2-x0)*(x1-x0)) * ((yp-y0)*(y2-y0)+(xp-x0)*(x2-x0)))/div;
