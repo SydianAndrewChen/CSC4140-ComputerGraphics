@@ -8,18 +8,58 @@ namespace CGL {
 
   Color Texture::sample(const SampleParams& sp) {
     // TODO: Task 6: Fill this in.
+    // std::cout << "sp.p_uv.x \t\t" << sp.p_uv.x << std::endl; 
+    // std::cout << "sp.p_uv.y \t\t" << sp.p_uv.y << std::endl; 
+    // std::cout << "mipmap[0].width \t\t" << mipmap[0].width << std::endl; 
+    auto& mip = mipmap[0];
+    float level = get_level(sp);
+    int l_nearest = std::max(static_cast<int>(std::round(level)), 0);
+    std::cout << "l_nearest \t\t" << l_nearest << std::endl; 
+    // std::cout << std::flush;
+    switch (sp.lsm)
+    {
+      case LevelSampleMethod::L_LINEAR:
+        return mip.get_texel(static_cast<int>(sp.p_uv.x * mip.width), static_cast<int>(sp.p_uv.y * mip.height));
+        break;
 
+      case LevelSampleMethod::L_NEAREST:
+        switch (sp.psm)
+        {
+          case PixelSampleMethod::P_NEAREST:
+            return sample_nearest(sp.p_uv, l_nearest);
+          case PixelSampleMethod::P_LINEAR:
+            return sample_bilinear(sp.p_uv, l_nearest);
+          default:
+            return sample_nearest(sp.p_uv, l_nearest);
+        }
 
+      case LevelSampleMethod::L_ZERO:
+        switch (sp.psm)
+        {
+          case PixelSampleMethod::P_NEAREST:
+            return sample_nearest(sp.p_uv, 0);
+          case PixelSampleMethod::P_LINEAR:
+            return sample_bilinear(sp.p_uv, 0);
+          default:
+            return sample_nearest(sp.p_uv, 0);
+        }
+        
+      default:
+        return mip.get_texel(static_cast<int>(sp.p_uv.x * mip.width), static_cast<int>(sp.p_uv.y * mip.height));
+    }
 // return magenta for invalid level
-    return Color(1, 0, 1);
+    // return Color(1, 0, 1);
   }
 
   float Texture::get_level(const SampleParams& sp) {
     // TODO: Task 6: Fill this in.
-
-
-
-    return 0;
+    Vector2D ddx = (sp.p_dx_uv - sp.p_uv);
+    ddx.x *= width;
+    ddx.y *= height;
+    Vector2D ddy = (sp.p_dy_uv - sp.p_uv);
+    ddy.x *= width;
+    ddy.y *= height;
+    return std::log2(std::sqrt(std::max(ddx.norm2(), ddy.norm2())) + 1e-5);
   }
 
   Color MipLevel::get_texel(int tx, int ty) {
@@ -29,23 +69,33 @@ namespace CGL {
   Color Texture::sample_nearest(Vector2D uv, int level) {
     // TODO: Task 5: Fill this in.
     auto& mip = mipmap[level];
+    int tx = std::round(uv.x * mip.width);
+    int ty = std::round(uv.y * mip.height);
 
-
-
+    // Clamp
+    tx = std::max(std::min(tx, static_cast<int>(mip.width)), 0);
+    ty = std::max(std::min(ty, static_cast<int>(mip.height)), 0);
 
     // return magenta for invalid level
-    return Color(1, 0, 1);
+    return mip.get_texel(tx, ty);
   }
 
   Color Texture::sample_bilinear(Vector2D uv, int level) {
     // TODO: Task 5: Fill this in.
     auto& mip = mipmap[level];
+    if (uv.x <= 0 || uv.y <= 0 || uv.x >= 1 || uv.y >= 1) return sample_nearest(uv, level);
 
+    int tx_left = static_cast<int>(uv.x * mip.width);
+    int ty_up = static_cast<int>(uv.y * mip.height);
+    
+    float rx_left = uv.x * mip.width - tx_left;
+    float ry_up = uv.y * mip.height - ty_up;
 
+    int tx_right = tx_left + 1;
+    int ty_down = ty_up + 1;
 
-
-    // return magenta for invalid level
-    return Color(1, 0, 1);
+    return (mip.get_texel(tx_left, ty_up) * rx_left + mip.get_texel(tx_right, ty_up) * (1. - rx_left)) * ry_up +
+    (mip.get_texel(tx_left, ty_down) * rx_left + mip.get_texel(tx_right, ty_down) * (1. - rx_left)) * (1. - ry_up);
   }
 
 

@@ -176,7 +176,42 @@ namespace CGL {
     // TODO: Task 6: Set the correct barycentric differentials in the SampleParams struct.
     // Hint: You can reuse code from rasterize_triangle/rasterize_interpolated_color_triangle
 
+    int s = static_cast<int>(sqrt(sample_rate));
+    int x_min = std::min(std::min(x0, x1), x2);
+    int y_min = std::min(std::min(y0, y1), y2);
+    int x_max = std::max(std::max(x0, x1), x2);
+    int y_max = std::max(std::max(y0, y1), y2);
+    x_min = s * std::max(std::min(x_min, (int)this->width), 0);
+    y_min = s * std::max(std::min(y_min, (int)this->height), 0);
+    x_max = s * std::max(std::min(x_max, (int)this->width), 0);
+    y_max = s * std::max(std::min(y_max, (int)this->height), 0);
+    
+    for (int x = x_min; x <= x_max; x++)
+    {
+      float bary[3];
+      for (int y = y_min; y <= y_max; y++)
+      { 
+        calc_bary(x0 * s, y0 * s, x1 * s, y1 * s, x2 * s, y2 * s, x, y, bary);
+        float eps = 1e-3;
+        // float eps = 0;
+        if (bary[0] > 0-eps && bary[0] < 1+eps && bary[1] > 0-eps && bary[1] < 1+eps && bary[2] > 0-eps && bary[2] < 1+eps){
+          SampleParams sample_params;
+          sample_params.lsm = this->lsm;
+          sample_params.psm = this->psm;
+          sample_params.p_uv = Vector2D(bary[0] * u0 + bary[1] * u1 + bary[2] * u2, bary[0] * v0 + bary[1] * v1 + bary[2] * v2);
+          
+          //dx
+          calc_bary(x0 * s, y0 * s, x1 * s, y1 * s, x2 * s, y2 * s, x+1, y, bary);
+          sample_params.p_dx_uv = Vector2D(bary[0] * u0 + bary[1] * u1 + bary[2] * u2, bary[0] * v0 + bary[1] * v1 + bary[2] * v2);
 
+          //dy
+          calc_bary(x0 * s, y0 * s, x1 * s, y1 * s, x2 * s, y2 * s, x, y+1, bary);
+          sample_params.p_dy_uv = Vector2D(bary[0] * u0 + bary[1] * u1 + bary[2] * u2, bary[0] * v0 + bary[1] * v1 + bary[2] * v2);
+          
+          rasterize_point(x, y, tex.sample(sample_params));
+        }
+      } 
+    }
 
 
   }
