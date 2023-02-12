@@ -200,6 +200,7 @@ namespace CGL {
           sample_params.psm = this->psm;
           sample_params.p_uv = Vector2D(bary[0] * u0 + bary[1] * u1 + bary[2] * u2, bary[0] * v0 + bary[1] * v1 + bary[2] * v2);
           
+          // \todo: Here, we should check different neighbours in four directions to find the most reasonable one. 
           //dx
           calc_bary(x0 * s, y0 * s, x1 * s, y1 * s, x2 * s, y2 * s, x+1, y, bary);
           sample_params.p_dx_uv = Vector2D(bary[0] * u0 + bary[1] * u1 + bary[2] * u2, bary[0] * v0 + bary[1] * v1 + bary[2] * v2);

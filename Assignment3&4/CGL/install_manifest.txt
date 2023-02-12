@@ -1,0 +1,12 @@
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/libglew.a
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/include/GL/glxew.h
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/include/GL/wglew.h
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/include/GL/glew.h
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/libglfw3.a
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/include/GLFW/glfw3.h
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/include/GLFW/glfw3native.h
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/cmake/glfw3/glfw3Config.cmake
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/cmake/glfw3/glfw3ConfigVersion.cmake
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/cmake/glfw3/glfw3Targets.cmake
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/cmake/glfw3/glfw3Targets-debug.cmake
+/home/sydian/CSC4140-ComputerGraphics/Assignment3&4/CGL/lib/pkgconfig/glfw3.pc
