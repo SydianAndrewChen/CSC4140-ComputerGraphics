@@ -4,6 +4,8 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <cmath>
+
+#include "demos.h"
 // add some other header files you need
 
 constexpr double MY_PI = 3.1415926;
@@ -82,6 +84,26 @@ int main(int argc, const char** argv)
     float angle = 0;
     bool command_line = false;
     std::string filename = "result.png";
+    
+    Mesh m;
+    if (strcmp(argv[1], "triangle") == 0) {
+        m = Triangle();
+    }
+    else if (strcmp(argv[1], "square") == 0) {
+        m = Square();
+    }
+    else if (strcmp(argv[1], "circle") == 0) {
+        m = Circle();
+    }
+    else{
+        std::ifstream in;
+        in.open(argv[1], std::ifstream::in);
+        if (in.fail()){
+            std::cout << "No obj file found." << std::endl;
+            return -1;
+        }
+        m = LoadObj(argv[1]);
+    }
 
     if (argc >= 3) {
         command_line = true;
@@ -96,14 +118,12 @@ int main(int argc, const char** argv)
     rst::rasterizer r(1024, 1024);
 
     // define your eye position "eye_pos" to a proper position
-    Eigen::Vector3f eye_pos(0,0,-2);
+    Eigen::Vector3f eye_pos(0,0,2);
 
     // define a triangle named by "pos" and "ind"
-    std::vector<Eigen::Vector3f> pos {Eigen::Vector3f(0.5, 0.0, 1.0), Eigen::Vector3f(-0.5, 0.0, 1.0), Eigen::Vector3f(0.5, 0.5, 1.0)};
-    std::vector<Eigen::Vector3i> ind {Eigen::Vector3i(0, 1, 2)};
 
-    auto pos_id = r.load_positions(pos);
-    auto ind_id = r.load_indices(ind);
+    auto pos_id = r.load_positions(m.pos);
+    auto ind_id = r.load_indices(m.ind);
 
     int key = 0;
     int frame_count = 0;
@@ -152,8 +172,8 @@ int main(int argc, const char** argv)
         cv::imshow("image", image);
         key = cv::waitKey(10);
 
-        std::cout << "frame count: " << frame_count++ << '\n';
-        std::clog << "angle: " << angle << std::endl;
+        // std::cout << "frame count: " << frame_count++ << '\n';
+        // std::clog << "angle: " << angle << std::endl;
     
 
         if (key == 'a') {
