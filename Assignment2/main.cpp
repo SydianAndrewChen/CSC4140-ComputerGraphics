@@ -95,6 +95,9 @@ int main(int argc, const char** argv)
     else if (strcmp(argv[1], "circle") == 0) {
         m = Circle();
     }
+    else if (strcmp(argv[1], "cube") == 0) {
+        m = Cube();
+    }
     else{
         std::ifstream in;
         in.open(argv[1], std::ifstream::in);
@@ -150,7 +153,7 @@ int main(int argc, const char** argv)
         r.set_projection(get_projection_matrix(eye_fov, aspect_ratio, zNear, zFar));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
-        cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
+        cv::Mat image(1024, 1024, CV_32FC3, r.frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);
 
         cv::imwrite(filename, image);

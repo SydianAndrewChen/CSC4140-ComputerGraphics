@@ -40,7 +40,7 @@ struct Mesh{
 
 Mesh Triangle(){
     Mesh res;
-    res.pos = {Eigen::Vector3f(0.5, 0.0, 1.0), Eigen::Vector3f(-0.5, 0.0, 1.0), Eigen::Vector3f(0.5, 0.5, 1.0)};
+    res.pos = {Eigen::Vector3f(0.5, 0.5, 0.0), Eigen::Vector3f(-0.5, 0.5, 0.0), Eigen::Vector3f(0.5, -0.5, 0.0)};
     res.ind = {Eigen::Vector3i(0, 1, 2)};
     return res;
 }
